@@ -8,8 +8,8 @@ layout {
             pane split_direction="horizontal" {
                 pane name="COMPILE AND RELOAD" {
                     command "bash"
-                    // args "-c" "cargo build --features tracing && zellij action start-or-reload-plugin zjpane"
-                    args "-c" "cargo build --features tracing"
+                    args "-c" "cargo build --features tracing && zellij action start-or-reload-plugin zjpane"
+                    // args "-c" "cargo build --features tracing"
                 }
 
                 pane {
@@ -19,14 +19,8 @@ layout {
             }
         }
 
-        // pane size="20%" {
-        //     plugin location="zjpane"
-        // }
-
-        floating_panes {
-            pane name="explorer" {
-                command "~/.config/yazi/dev/yazi"
-            }
+        pane size="20%" {
+            plugin location="zjpane"
         }
     }
 
