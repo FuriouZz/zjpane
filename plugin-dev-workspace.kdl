@@ -2,14 +2,13 @@ layout {
     tab name="editor" focus=true split_direction="horizontal" {
         pane split_direction="vertical" {
             pane name="editor" focus=true size="70%" {
-                command "~/.config/helix/dev/hx"
+                edit "src/main.rs"
             }
 
             pane split_direction="horizontal" {
                 pane name="COMPILE AND RELOAD" {
                     command "bash"
                     args "-c" "cargo build --features tracing && zellij action start-or-reload-plugin zjpane"
-                    // args "-c" "cargo build --features tracing"
                 }
 
                 pane {
@@ -24,10 +23,6 @@ layout {
         }
     }
 
-    tab name="git" {
-        pane command="gitui" borderless=true
-    }
-
     default_tab_template {
         children
         pane size=1 borderless=true {
@@ -38,15 +33,4 @@ layout {
 
 plugins {
     zjpane location="file:target/wasm32-wasi/debug/zjpane.wasm"
-}
-
-keybinds {
-    shared_except "locked" {
-        bind "Ctrl p" {
-            LaunchOrFocusPlugin "zjpane" {
-                floating true; 
-                move_to_focused_tab true;
-            }
-        }
-    }
 }
