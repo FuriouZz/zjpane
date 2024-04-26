@@ -1,5 +1,20 @@
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, path::Path};
 use zellij_tile::prelude::*;
+
+mod user_command;
+use user_command::UserCommand;
+
+#[derive(Debug)]
+enum Mode {
+    Pane,
+    Command,
+}
+
+impl Default for Mode {
+    fn default() -> Self {
+        Self::Pane
+    }
+}
 
 #[derive(Default)]
 struct State {
@@ -7,18 +22,43 @@ struct State {
     panes: Vec<PaneInfo>,
     position: usize,
     has_permission_granted: bool,
-    userspace_configuration: BTreeMap<String, String>,
+    commands: BTreeMap<String, UserCommand>,
+    mode: Mode,
 }
 
 register_plugin!(State);
 
 impl State {
-    fn handle_event(&mut self, event: Event) -> bool {
+    fn parse_config(&mut self, user_config: &BTreeMap<String, String>) {
+        let keys = user_config.keys().filter(|key| key.starts_with("command_"));
+
+        for key in keys {
+            let name = key.split("_").nth(1);
+            if name.is_none() {
+                continue;
+            }
+            let name = name.unwrap();
+
+            let command = if let Some(c) = self.commands.get_mut(name) {
+                c
+            } else {
+                self.commands
+                    .insert(name.to_string(), UserCommand { args: Vec::new() });
+                self.commands.get_mut(name).unwrap()
+            };
+
+            if key.ends_with("_command") {
+                command.set_command(user_config.get(key).unwrap());
+            }
+        }
+    }
+
+    fn handle_event(&mut self, event: &Event) -> bool {
         let mut should_render = false;
         match event {
             Event::TabUpdate(tabs) => {
                 tracing::Span::current().record("event_type", "Event::TabUpdate");
-                tracing::debug!(tabs = ?tabs);
+                // tracing::debug!(tabs = ?tabs);
 
                 for tab in tabs {
                     if tab.active {
@@ -27,25 +67,40 @@ impl State {
                     }
                 }
             }
-            Event::PaneUpdate(panes) => {
+            Event::PaneUpdate(infos) => {
                 tracing::Span::current().record("event_type", "Event::PaneUpdate");
-                tracing::debug!(panes = ?panes);
+                // tracing::debug!(panes = ?panes);
 
                 self.panes.clear();
                 self.position = 0;
-                for pane in panes.panes {
-                    if pane.0 != self.active_tab {
+                for pane in infos.panes.iter() {
+                    if *pane.0 != self.active_tab {
                         continue;
                     }
                     for info in pane.1 {
                         if !info.is_plugin {
-                            self.panes.push(info);
+                            self.panes.push(info.clone());
                         }
                     }
                 }
 
                 should_render = true;
             }
+            Event::Key(key) => match key {
+                Key::Esc => {
+                    self.position = 0;
+                    hide_self();
+                }
+                _ => (),
+            },
+            _ => (),
+        }
+        should_render
+    }
+
+    fn handle_command_event(&mut self, event: &Event) -> bool {
+        let mut should_render = false;
+        match event {
             Event::Key(key) => {
                 tracing::Span::current().record("event_type", "Event::Key");
                 tracing::debug!(key = ?key);
@@ -58,21 +113,75 @@ impl State {
                         should_render = true;
                     }
                     Key::Down => {
+                        if self.position < self.commands.len() - 1 {
+                            self.position += 1;
+                        }
+                        should_render = true;
+                    }
+                    Key::Left => {
+                        self.position = 0;
+                        self.mode = Mode::Pane;
+                        should_render = true
+                    }
+                    Key::Char(c) if (*c as u32) == 10 => {
+                        if let Some(pane) = self.commands.iter().nth(self.position) {
+                            self.position = 0;
+                            hide_self();
+
+                            let args = pane.1.args.clone();
+                            open_command_pane_floating(
+                                CommandToRun::new_with_args(
+                                    Path::new(&args[0]),
+                                    args[1..].to_vec(),
+                                ),
+                                None,
+                            );
+                            // open_command_pane_in_place(CommandToRun::new_with_args(
+                            //     Path::new(&args[0]),
+                            //     args[1..].to_vec(),
+                            // ));
+                        }
+                    }
+                    _ => (),
+                }
+            }
+            _ => (),
+        }
+        should_render
+    }
+
+    fn handle_pane_event(&mut self, event: &Event) -> bool {
+        let mut should_render = false;
+        match event {
+            Event::Key(key) => {
+                tracing::Span::current().record("event_type", "Event::Key");
+                tracing::debug!(key = ?key);
+
+                match key {
+                    Key::Up => {
+                        if self.position > 0 {
+                            self.position -= 1;
+                        }
+                        should_render = true;
+                    }
+                    Key::Right => {
+                        self.position = 0;
+                        self.mode = Mode::Command;
+                        should_render = true
+                    }
+                    Key::Down => {
                         if self.position < self.panes.len() - 1 {
                             self.position += 1;
                         }
                         should_render = true;
                     }
-                    Key::Char(c) if (c as u32) == 10 => {
+                    Key::Char(c) if (*c as u32) == 10 => {
                         if let Some(pane) = self.panes.get(self.position) {
-                            focus_terminal_pane(pane.id, false);
                             self.position = 0;
                             hide_self();
+
+                            focus_terminal_pane(pane.id, false);
                         }
-                    }
-                    Key::Esc => {
-                        self.position = 0;
-                        hide_self();
                     }
                     _ => (),
                 }
@@ -150,11 +259,13 @@ impl ZellijPlugin for State {
         #[cfg(feature = "tracing")]
         init_tracing();
 
-        self.userspace_configuration = configuration;
+        self.parse_config(&configuration);
 
         request_permission(&[
             PermissionType::ReadApplicationState,
             PermissionType::ChangeApplicationState,
+            PermissionType::OpenTerminalsOrPlugins,
+            PermissionType::RunCommands,
         ]);
 
         subscribe(&[
@@ -162,6 +273,7 @@ impl ZellijPlugin for State {
             EventType::PaneUpdate,
             EventType::Key,
             EventType::PermissionRequestResult,
+            EventType::RunCommandResult,
         ]);
     }
 
@@ -181,7 +293,13 @@ impl ZellijPlugin for State {
             return false;
         }
 
-        self.handle_event(event)
+        let should_render = self.handle_event(&event);
+        let should_render2 = match self.mode {
+            Mode::Pane => self.handle_pane_event(&event),
+            Mode::Command => self.handle_command_event(&event),
+        };
+
+        should_render || should_render2
     }
 
     fn pipe(&mut self, pipe_message: PipeMessage) -> bool {
@@ -199,13 +317,30 @@ impl ZellijPlugin for State {
     }
 
     fn render(&mut self, _rows: usize, _cols: usize) {
-        for pane in self.panes.iter() {
-            let selected = if pane.id == (self.position as u32) {
-                "*"
-            } else {
-                " "
-            };
-            println!("{} #{} {}", selected, pane.id, pane.title);
+        let (pane_mode_selected, command_mode_selected) = match self.mode {
+            Mode::Pane => ("*", " "),
+            Mode::Command => (" ", "*"),
+        };
+        println!(
+            "[{}] Pane Mode / [{}] Command Mode",
+            pane_mode_selected, command_mode_selected
+        );
+
+        println!("{:?}", self.mode);
+
+        match self.mode {
+            Mode::Pane => {
+                for (i, pane) in self.panes.iter().enumerate() {
+                    let selected = if i == self.position { "*" } else { " " };
+                    println!("{} #{} {}", selected, pane.id, pane.title);
+                }
+            }
+            Mode::Command => {
+                for (i, name) in self.commands.keys().enumerate() {
+                    let selected = if i == self.position { "*" } else { " " };
+                    println!("{} #{} {}", selected, i, name);
+                }
+            }
         }
     }
 }

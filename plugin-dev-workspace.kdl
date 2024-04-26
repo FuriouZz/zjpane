@@ -17,10 +17,6 @@ layout {
                 }
             }
         }
-
-        pane size="20%" {
-            plugin location="zjpane"
-        }
     }
 
     default_tab_template {
@@ -33,4 +29,16 @@ layout {
 
 plugins {
     zjpane location="file:target/wasm32-wasi/debug/zjpane.wasm"
+}
+
+keybinds {
+    shared_except "locked" {
+        bind "Ctrl p" {
+            LaunchOrFocusPlugin "zjpane" {
+                floating true; 
+                command_echo_command "bash -c 'WHO=World echo \"Hello $WHO\"'"
+                command_yazi_command "bash -c '~/.config/yazi/dev/yazi'"
+            }
+        }
+    }
 }
