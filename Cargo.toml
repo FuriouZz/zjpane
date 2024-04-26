@@ -1,7 +1,7 @@
 [package]
 name = "zjpane"
 version = "0.1.0"
-authors = ["Aram Drevekenin <aram@poor.dev>"]
+authors = ["Christophe MASSOLIN <info@chrsmsln.com>"]
 edition = "2018"
 
 [dependencies]
