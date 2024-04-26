@@ -1,7 +1,7 @@
 # zjpane
 
 <p>
-  Navigate between zellij panes easily.
+  Navigate between zellij panes and execute commands easily.
   <br><br>
   <a href="https://github.com/furiouzz/zjpane/actions/workflows/lint.yml">
     <img alt="clippy check" src="https://github.com/furiouzz/zjpane/actions/workflows/lint.yml/badge.svg" />
@@ -11,7 +11,7 @@
   </a>
 </p>
 
-![Screenshot of zjpane](./assets/screenshot.png)
+![Video of zjpane](./assets/capture.gif)
 
 ## Installation
 
