@@ -158,13 +158,13 @@ impl ZellijPlugin for State {
                 match key {
                     Key::Up => {
                         if self.position > 0 {
-                            self.position = self.position - 1;
+                            self.position -= 1;
                         }
                         should_render = true;
                     }
                     Key::Down => {
                         if self.position < self.panes.len() - 1 {
-                            self.position = self.position + 1;
+                            self.position += 1;
                         }
                         should_render = true;
                     }
@@ -172,6 +172,7 @@ impl ZellijPlugin for State {
                         if let Some(pane) = self.panes.get(self.position) {
                             focus_terminal_pane(pane.id, false);
                             hide_self();
+                            self.position = 0;
                         }
                     }
                     Key::Esc => {
