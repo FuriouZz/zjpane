@@ -33,14 +33,14 @@ impl State {
         let keys = user_config.keys().filter(|key| key.starts_with("command_"));
 
         for key in keys {
-            let name = key.split("_").nth(1);
+            let name = key.split('_').nth(1);
             if name.is_none() {
                 continue;
             }
             let name = name.unwrap();
 
             let command = self.commands.iter_mut().find_map(|entry| {
-                if name == &entry.name {
+                if name == entry.name {
                     return Some(entry);
                 }
                 None
@@ -96,13 +96,10 @@ impl State {
 
                 should_render = true;
             }
-            Event::Key(key) => match key {
-                Key::Esc => {
-                    self.position = 0;
-                    hide_self();
-                }
-                _ => (),
-            },
+            Event::Key(key) if key == &Key::Esc => {
+                self.position = 0;
+                hide_self();
+            }
             _ => (),
         }
         should_render
@@ -110,93 +107,84 @@ impl State {
 
     fn handle_command_event(&mut self, event: &Event) -> bool {
         let mut should_render = false;
-        match event {
-            Event::Key(key) => {
-                tracing::Span::current().record("event_type", "Event::Key");
-                tracing::debug!(key = ?key);
+        if let Event::Key(key) = event {
+            tracing::Span::current().record("event_type", "Event::Key");
+            tracing::debug!(key = ?key);
 
-                match key {
-                    Key::Up => {
-                        if self.position > 0 {
-                            self.position -= 1;
-                        }
-                        should_render = true;
+            match key {
+                Key::Up => {
+                    if self.position > 0 {
+                        self.position -= 1;
                     }
-                    Key::Down => {
-                        if self.position < self.commands.len() - 1 {
-                            self.position += 1;
-                        }
-                        should_render = true;
-                    }
-                    Key::Left => {
-                        self.position = 0;
-                        self.mode = Mode::Pane;
-                        should_render = true
-                    }
-                    Key::Char(c) if (*c as u32) == 10 => {
-                        if let Some(command) = self.commands.iter().nth(self.position) {
-                            self.position = 0;
-                            hide_self();
-
-                            let args = command.args.clone();
-                            open_command_pane_floating(
-                                CommandToRun::new_with_args(
-                                    Path::new(&args[0]),
-                                    args[1..].to_vec(),
-                                ),
-                                None,
-                            );
-                            // open_command_pane_in_place(CommandToRun::new_with_args(
-                            //     Path::new(&args[0]),
-                            //     args[1..].to_vec(),
-                            // ));
-                        }
-                    }
-                    _ => (),
+                    should_render = true;
                 }
+                Key::Down => {
+                    if self.position < self.commands.len() - 1 {
+                        self.position += 1;
+                    }
+                    should_render = true;
+                }
+                Key::Left => {
+                    self.position = 0;
+                    self.mode = Mode::Pane;
+                    should_render = true
+                }
+                Key::Char(c) if (*c as u32) == 10 => {
+                    if let Some(command) = self.commands.get(self.position) {
+                        self.position = 0;
+                        hide_self();
+
+                        let args = command.args.clone();
+                        open_command_pane_floating(
+                            CommandToRun::new_with_args(Path::new(&args[0]), args[1..].to_vec()),
+                            None,
+                        );
+                        // open_command_pane_in_place(CommandToRun::new_with_args(
+                        //     Path::new(&args[0]),
+                        //     args[1..].to_vec(),
+                        // ));
+                    }
+                }
+                _ => (),
             }
-            _ => (),
         }
         should_render
     }
 
     fn handle_pane_event(&mut self, event: &Event) -> bool {
         let mut should_render = false;
-        match event {
-            Event::Key(key) => {
-                tracing::Span::current().record("event_type", "Event::Key");
-                tracing::debug!(key = ?key);
+        if let Event::Key(key) = event {
+            tracing::Span::current().record("event_type", "Event::Key");
+            tracing::debug!(key = ?key);
 
-                match key {
-                    Key::Up => {
-                        if self.position > 0 {
-                            self.position -= 1;
-                        }
-                        should_render = true;
+            match key {
+                Key::Up => {
+                    if self.position > 0 {
+                        self.position -= 1;
                     }
-                    Key::Right => {
-                        self.position = 0;
-                        self.mode = Mode::Command;
-                        should_render = true
-                    }
-                    Key::Down => {
-                        if self.position < self.panes.len() - 1 {
-                            self.position += 1;
-                        }
-                        should_render = true;
-                    }
-                    Key::Char(c) if (*c as u32) == 10 => {
-                        if let Some(pane) = self.panes.get(self.position) {
-                            self.position = 0;
-                            hide_self();
-
-                            focus_terminal_pane(pane.id, false);
-                        }
-                    }
-                    _ => (),
+                    should_render = true;
                 }
+                Key::Right => {
+                    self.position = 0;
+                    self.mode = Mode::Command;
+                    should_render = true
+                }
+                Key::Down => {
+                    if self.position < self.panes.len() - 1 {
+                        self.position += 1;
+                    }
+                    should_render = true;
+                }
+                Key::Char(c) if (*c as u32) == 10 => {
+                    if let Some(pane) = self.panes.get(self.position) {
+                        self.position = 0;
+                        hide_self();
+
+                        focus_terminal_pane(pane.id, false);
+                    }
+                }
+                _ => (),
             }
-            _ => (),
         }
         should_render
     }
