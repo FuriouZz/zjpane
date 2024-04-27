@@ -1,6 +1,7 @@
 use shlex::Shlex;
 
 pub struct UserCommand {
+    pub name: String,
     pub args: Vec<String>,
 }
 

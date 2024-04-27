@@ -22,7 +22,7 @@ struct State {
     panes: Vec<PaneInfo>,
     position: usize,
     has_permission_granted: bool,
-    commands: BTreeMap<String, UserCommand>,
+    commands: Vec<UserCommand>,
     mode: Mode,
 }
 
@@ -39,12 +39,22 @@ impl State {
             }
             let name = name.unwrap();
 
-            let command = if let Some(c) = self.commands.get_mut(name) {
+            let command = self.commands.iter_mut().find_map(|entry| {
+                if name == &entry.name {
+                    return Some(entry);
+                }
+                None
+            });
+
+            let command = if let Some(c) = command {
                 c
             } else {
-                self.commands
-                    .insert(name.to_string(), UserCommand { args: Vec::new() });
-                self.commands.get_mut(name).unwrap()
+                let index = self.commands.len();
+                self.commands.push(UserCommand {
+                    name: name.to_string(),
+                    args: Vec::new(),
+                });
+                self.commands.get_mut(index).unwrap()
             };
 
             if key.ends_with("_command") {
@@ -124,11 +134,11 @@ impl State {
                         should_render = true
                     }
                     Key::Char(c) if (*c as u32) == 10 => {
-                        if let Some(pane) = self.commands.iter().nth(self.position) {
+                        if let Some(command) = self.commands.iter().nth(self.position) {
                             self.position = 0;
                             hide_self();
 
-                            let args = pane.1.args.clone();
+                            let args = command.args.clone();
                             open_command_pane_floating(
                                 CommandToRun::new_with_args(
                                     Path::new(&args[0]),
@@ -217,17 +227,34 @@ impl State {
                 }
             }
             "focus" => {
-                let mut pane: Option<&PaneInfo> = None;
-
-                for p in self.panes.iter() {
-                    if p.title.eq(payload) {
-                        pane = Some(p);
-                        break;
-                    }
-                }
-
+                let pane = self.panes.iter_mut().find(|pane| pane.title.eq(payload));
                 if let Some(pane) = pane {
                     focus_terminal_pane(pane.id, false);
+                }
+            }
+            "execute_at" => {
+                if let Ok(Some(command)) = payload
+                    .parse::<usize>()
+                    .map(|index| self.commands.get(index))
+                {
+                    let args = command.args.clone();
+                    open_command_pane_floating(
+                        CommandToRun::new_with_args(Path::new(&args[0]), args[1..].to_vec()),
+                        None,
+                    );
+                }
+            }
+            "execute" => {
+                let command = self
+                    .commands
+                    .iter_mut()
+                    .find(|command| command.name.eq(payload));
+                if let Some(command) = command {
+                    let args = command.args.clone();
+                    open_command_pane_floating(
+                        CommandToRun::new_with_args(Path::new(&args[0]), args[1..].to_vec()),
+                        None,
+                    );
                 }
             }
             _ => (),
@@ -326,8 +353,6 @@ impl ZellijPlugin for State {
             pane_mode_selected, command_mode_selected
         );
 
-        println!("{:?}", self.mode);
-
         match self.mode {
             Mode::Pane => {
                 for (i, pane) in self.panes.iter().enumerate() {
@@ -336,9 +361,9 @@ impl ZellijPlugin for State {
                 }
             }
             Mode::Command => {
-                for (i, name) in self.commands.keys().enumerate() {
+                for (i, command) in self.commands.iter().enumerate() {
                     let selected = if i == self.position { "*" } else { " " };
-                    println!("{} #{} {}", selected, i, name);
+                    println!("{} #{} {}", selected, i, command.name);
                 }
             }
         }
