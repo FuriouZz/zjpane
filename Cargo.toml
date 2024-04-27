@@ -1,6 +1,6 @@
 [package]
 name = "zjpane"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Christophe MASSOLIN <info@chrsmsln.com>"]
 edition = "2018"
 
