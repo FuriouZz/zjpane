@@ -1,7 +1,7 @@
 # zjpane
 
 <p>
-  Navigate between zellij panes and execute commands easily.
+  Navigate between [zellij](https://zellij.dev/) panes easily.
   <br><br>
   <a href="https://github.com/furiouzz/zjpane/actions/workflows/lint.yml">
     <img alt="clippy check" src="https://github.com/furiouzz/zjpane/actions/workflows/lint.yml/badge.svg" />
@@ -11,20 +11,36 @@
   </a>
 </p>
 
+This plugin provide a way to navigate between your panes and to configure commands to execute easily.
+
 ![Video of zjpane](./assets/capture.gif)
 
 ## Installation
 
+Download the latest release of `zjpane.wasm` from the [Release](https://github.com/FuriouZz/zjpane/releases) page. 
+Place it somewhere accessible for zellij, for example `~/.config/zellij/plugins/zjpane.wasm`.
+
 ```kdl
 plugins {
-    zjpane location="file:target/wasm32-wasi/debug/zjpane.wasm"
+    // You can register the plugin to an alias
+    zjpane location="file:~/.config/zellij/plugins/zjpane.wasm"
+}
+
+layout {
+    // Create a pane with zjpane alias
+    pane {
+        plugin location="zjpane"
+    }
 }
 
 keybinds {
     shared_except "locked" {
         bind "Ctrl p" {
+            // Bind the plugin to a shortcut
             LaunchOrFocusPlugin "zjpane" {
                 floating true; 
+                command_echo_command "echo 'Hello World'"
+                command_explorer_command "yazi"
             }
         }
     }
@@ -33,16 +49,28 @@ keybinds {
 
 ## Pipes
 
-Focus on a specific pane by name:
+Focus on a pane by name:
 
 ```
 zellij pipe "zjpane::focus::PANE_NAME"
 ```
 
-Focus on a specific pane by index:
+Focus on a pane by index:
 
 ```
 zellij pipe "zjpane::focus_at::PANE_INDEX"
+```
+
+Execute a command by name:
+
+```
+zellij pipe "zjpane::execute::COMMAND_NAME"
+```
+
+Execute a pane at index:
+
+```
+zellij pipe "zjpane::execute_at::COMMAND_INDEX"
 ```
 
 ## Inspiration

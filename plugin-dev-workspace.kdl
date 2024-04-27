@@ -36,7 +36,7 @@ keybinds {
         bind "Ctrl p" {
             LaunchOrFocusPlugin "zjpane" {
                 floating true; 
-                command_echo_command "bash -c 'WHO=World echo \"Hello $WHO\"'"
+                command_echo_command "bash -c 'echo \"Hello World\"'"
                 command_yazi_command "bash -c '~/.config/yazi/dev/yazi'"
             }
         }
