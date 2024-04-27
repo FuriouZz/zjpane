@@ -1,7 +1,7 @@
 # zjpane
 
 <p>
-  Navigate between [zellij](https://zellij.dev/) panes easily.
+  Navigate between <a href="https://zellij.dev/" target="__blank">zellij</a> panes easily.
   <br><br>
   <a href="https://github.com/furiouzz/zjpane/actions/workflows/lint.yml">
     <img alt="clippy check" src="https://github.com/furiouzz/zjpane/actions/workflows/lint.yml/badge.svg" />
