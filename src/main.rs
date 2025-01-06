@@ -96,7 +96,7 @@ impl State {
 
                 should_render = true;
             }
-            Event::Key(key) if key == &Key::Esc => {
+            Event::Key(key) if key.bare_key == BareKey::Esc => {
                 self.position = 0;
                 hide_self();
             }
@@ -111,25 +111,25 @@ impl State {
             tracing::Span::current().record("event_type", "Event::Key");
             tracing::debug!(key = ?key);
 
-            match key {
-                Key::Up => {
+            match key.bare_key {
+                BareKey::Up => {
                     if self.position > 0 {
                         self.position -= 1;
                     }
                     should_render = true;
                 }
-                Key::Down => {
+                BareKey::Down => {
                     if self.position < self.commands.len() - 1 {
                         self.position += 1;
                     }
                     should_render = true;
                 }
-                Key::Left => {
+                BareKey::Left => {
                     self.position = 0;
                     self.mode = Mode::Pane;
                     should_render = true
                 }
-                Key::Char(c) if (*c as u32) == 10 => {
+                BareKey::Enter => {
                     if let Some(command) = self.commands.get(self.position) {
                         self.position = 0;
                         hide_self();
@@ -138,6 +138,7 @@ impl State {
                         open_command_pane_floating(
                             CommandToRun::new_with_args(Path::new(&args[0]), args[1..].to_vec()),
                             None,
+                            BTreeMap::new(),
                         );
                         // open_command_pane_in_place(CommandToRun::new_with_args(
                         //     Path::new(&args[0]),
@@ -157,25 +158,25 @@ impl State {
             tracing::Span::current().record("event_type", "Event::Key");
             tracing::debug!(key = ?key);
 
-            match key {
-                Key::Up => {
+            match key.bare_key {
+                BareKey::Up => {
                     if self.position > 0 {
                         self.position -= 1;
                     }
                     should_render = true;
                 }
-                Key::Right => {
+                BareKey::Right => {
                     self.position = 0;
                     self.mode = Mode::Command;
                     should_render = true
                 }
-                Key::Down => {
+                BareKey::Down => {
                     if self.position < self.panes.len() - 1 {
                         self.position += 1;
                     }
                     should_render = true;
                 }
-                Key::Char(c) if (*c as u32) == 10 => {
+                BareKey::Enter => {
                     if let Some(pane) = self.panes.get(self.position) {
                         self.position = 0;
                         hide_self();
@@ -229,6 +230,7 @@ impl State {
                     open_command_pane_floating(
                         CommandToRun::new_with_args(Path::new(&args[0]), args[1..].to_vec()),
                         None,
+                        BTreeMap::new(),
                     );
                 }
             }
@@ -242,6 +244,7 @@ impl State {
                     open_command_pane_floating(
                         CommandToRun::new_with_args(Path::new(&args[0]), args[1..].to_vec()),
                         None,
+                        BTreeMap::new(),
                     );
                 }
             }
