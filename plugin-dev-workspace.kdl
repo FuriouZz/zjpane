@@ -28,7 +28,7 @@ layout {
 }
 
 plugins {
-    zjpane location="file:target/wasm32-wasi/debug/zjpane.wasm"
+    zjpane location="file:target/wasm32-wasip1/debug/zjpane.wasm"
 }
 
 keybinds {
