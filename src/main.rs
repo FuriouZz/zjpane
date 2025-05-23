@@ -215,6 +215,13 @@ impl State {
                     focus_terminal_pane(pane.id, false);
                 }
             }
+            "focus_id" => {
+                if let Ok(pane_id) = payload.parse::<u32>() {
+                    if let Some(pane) = self.panes.iter().find(|p| p.id == pane_id) {
+                        focus_terminal_pane(pane.id, false);
+                    }
+                }
+            }
             "focus" => {
                 let pane = self.panes.iter_mut().find(|pane| pane.title.eq(payload));
                 if let Some(pane) = pane {
