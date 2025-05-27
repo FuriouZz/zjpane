@@ -61,6 +61,12 @@ Focus on a pane by index:
 zellij pipe "zjpane::focus_at::PANE_INDEX"
 ```
 
+Focus on a pane by id (based on the `ZELLIJ_PANE_ID` environment variable):
+
+```
+zellij pipe "zjpane::focus_id::PANE_ID"
+```
+
 Execute a command by name:
 
 ```
